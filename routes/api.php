@@ -5,6 +5,7 @@ use App\Http\Controllers\AgenteLesionController;
 use App\Http\Controllers\AmbitoViolenciaController;
 use App\Http\Controllers\AreaAnatomicaLesionadaController;
 use App\Http\Controllers\ConsecuenciasSexualesController;
+use App\Http\Controllers\DiscapacidadesController;
 use App\Http\Controllers\EfectosEconomicosPatrimonialesController;
 use App\Http\Controllers\EfectosFisicosController;
 use App\Http\Controllers\EfectosPsicologicosController;
@@ -16,17 +17,18 @@ use App\Http\Controllers\IdentidadGeneroController;
 use App\Http\Controllers\IngresosPromediosController;
 use App\Http\Controllers\OrientacionSexualController;
 use App\Http\Controllers\PermisosController;
+use App\Http\Controllers\RelacionController;
 use App\Http\Controllers\RolesController;
 use App\Http\Controllers\ServicioMedicoController;
 use App\Http\Controllers\TipoViolenciaController;
 use App\Http\Controllers\TransporteForaneoController;
 use App\Http\Controllers\TransportePrivadoController;
 use App\Http\Controllers\TransporteUrbanoController;
+use App\Http\Controllers\UltimoGradoEstudiosController;
 use App\Http\Controllers\UsersController;
 use App\Models\EspacioDigital;
 use App\Models\EspacioParticular;
 use App\Models\TransportePrivado;
-use App\Models\UltimoGradoEstudios;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -106,7 +108,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/', [EstadoCivilController::class, 'index']);
     });
     Route::prefix('/gradoestudios')->group(function () {
-        Route::get('/', [UltimoGradoEstudios::class, 'index']);
+        Route::get('/', [UltimoGradoEstudiosController::class, 'index']);
     });
     Route::prefix('/ingresospromedios')->group(function () {
         Route::get('/', [IngresosPromediosController::class, 'index']);
@@ -117,8 +119,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('/serviciomedico')->group(function () {
         Route::get('/', [ServicioMedicoController::class, 'index']);
     });
-
-
+    Route::prefix('/discapacidades')->group(function () {
+        Route::get('/', [DiscapacidadesController::class, 'index']);
+    });
+    Route::prefix('/relacion')->group(function () {
+        Route::get('/', [RelacionController::class, 'index']);
+    });
 
 
     Route::prefix('/usuarios')->group(function () {

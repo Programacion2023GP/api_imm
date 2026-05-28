@@ -16,9 +16,13 @@ abstract class Controller
         try {
             $data = $this->model::all();
 
-            return ApiResponse::success($data, 'lista de datos ' . $this->model->getName());
+            // Obtener el nombre de la clase del modelo
+            $modelName = class_basename($this->model);
+
+            return ApiResponse::success($data, 'Lista de datos de ' . $modelName);
         } catch (Exception $e) {
-            Log::info($this->model->getName() . ' - ' . $e->getMessage());
+            $modelName = class_basename($this->model);
+            Log::info($modelName . ' - ' . $e->getMessage());
             return ApiResponse::error('Ocurrió un error', 500);
         }
     }
