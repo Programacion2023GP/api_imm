@@ -4,7 +4,10 @@ use App\Http\Controllers\ActividadPrincipalController;
 use App\Http\Controllers\AgenteLesionController;
 use App\Http\Controllers\AmbitoViolenciaController;
 use App\Http\Controllers\AreaAnatomicaLesionadaController;
+use App\Http\Controllers\ArmasController;
+use App\Http\Controllers\CanalizacionController;
 use App\Http\Controllers\ConsecuenciasSexualesController;
+use App\Http\Controllers\DependenciasController;
 use App\Http\Controllers\DiscapacidadesController;
 use App\Http\Controllers\EfectosEconomicosPatrimonialesController;
 use App\Http\Controllers\EfectosFisicosController;
@@ -15,20 +18,23 @@ use App\Http\Controllers\EspacioPublicoController;
 use App\Http\Controllers\EstadoCivilController;
 use App\Http\Controllers\IdentidadGeneroController;
 use App\Http\Controllers\IngresosPromediosController;
+use App\Http\Controllers\OcupacionesController;
 use App\Http\Controllers\OrientacionSexualController;
 use App\Http\Controllers\PermisosController;
 use App\Http\Controllers\RelacionController;
 use App\Http\Controllers\RolesController;
 use App\Http\Controllers\ServicioMedicoController;
+use App\Http\Controllers\ServiciosJuridicosController;
+use App\Http\Controllers\ServiciosPsicologicosController;
+use App\Http\Controllers\SustanciasController;
 use App\Http\Controllers\TipoViolenciaController;
+use App\Http\Controllers\TrabajoSocialController;
 use App\Http\Controllers\TransporteForaneoController;
 use App\Http\Controllers\TransportePrivadoController;
 use App\Http\Controllers\TransporteUrbanoController;
 use App\Http\Controllers\UltimoGradoEstudiosController;
 use App\Http\Controllers\UsersController;
-use App\Models\EspacioDigital;
-use App\Models\EspacioParticular;
-use App\Models\TransportePrivado;
+
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -125,8 +131,31 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('/relacion')->group(function () {
         Route::get('/', [RelacionController::class, 'index']);
     });
+    Route::prefix('/ocupaciones')->group(function () {
+        Route::get('/', [OcupacionesController::class, 'index']);
+    });
+    Route::prefix('/armas')->group(function () {
+        Route::get('/', [ArmasController::class, 'index']);
+    });
+    Route::prefix('/sustancias')->group(function () {
+        Route::get('/', [SustanciasController::class, 'index']);
+    });
 
-
+    Route::prefix('/trabajosocial')->group(function () {
+        Route::get('/', [TrabajoSocialController::class, 'index']);
+    });
+    Route::prefix('/serviciosjuridicos')->group(function () {
+        Route::get('/', [ServiciosJuridicosController::class, 'index']);
+    });
+    Route::prefix('/serviciospsicologicos')->group(function () {
+        Route::get('/', [ServiciosPsicologicosController::class, 'index']);
+    });
+    Route::prefix('/canalizacion')->group(function () {
+        Route::get('/', [CanalizacionController::class, 'index']);
+    });
+    Route::prefix('/dependencias')->group(function () {
+        Route::get('/', [DependenciasController::class, 'index']);
+    });
     Route::prefix('/usuarios')->group(function () {
         Route::get('/', [UsersController::class, 'index']);
 
