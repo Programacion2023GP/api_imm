@@ -193,28 +193,26 @@ class EntrevistasController extends Controller
     public function all()
     {
         try {
-            $entrevistas = Entrevista::query();
-            if (!in_array(Auth::user()->id_rol, [1, 2])) {
-                $entrevistas->where('id_user_created', Auth::id());
-            }
-            else{
-
+            // Para roles 1 y 2 (admin/superadmin) -> ven TODAS las entrevistas
+            // Para otros roles -> solo ven las que ellos crearon
+            if (in_array(Auth::user()->id_rol, [1, 2])) {
+                $entrevistas = Entrevista::all();
+            } else {
                 $entrevistas = Entrevista::where('id_user_created', Auth::id())->get();
-            }            
+            }
 
             if ($entrevistas->isEmpty()) {
-                return response()->json([
-                    'success' => true,
-                    'data' => [],
-                    'message' => 'No hay entrevistas registradas'
-                ]);
+                return ApiResponse::success(
+                    [],
+                    'No hay entrevistas registradas'
+                );
             }
 
             // Preparar el resultado
             $result = [];
 
             foreach ($entrevistas as $entrevista) {
-                $item = (array) $entrevista;
+                $item = $entrevista->toArray();
                 $id = $entrevista->id;
 
                 // Cargar relaciones uno a muchos (listas de objetos)
@@ -322,12 +320,11 @@ class EntrevistasController extends Controller
 
             return ApiResponse::success(
                 $result,
-                'data de entrevistas'
+                'Datos de entrevistas obtenidos correctamente'
             );
-        
         } catch (\Exception $e) {
-            Log::error($e->getMessage());
-            return ApiResponse::error('Ocurrio un error', 500);
+            Log::error('Error en all(): ' . $e->getMessage());
+            return ApiResponse::error('Ocurrió un error', 500);
         }
     }
 
