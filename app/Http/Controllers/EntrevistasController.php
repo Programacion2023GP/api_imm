@@ -1,0 +1,404 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\ApiResponse;
+use App\Models\Entrevista;
+use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+
+class EntrevistasController extends Controller
+{
+    protected $model = Entrevista::class;
+
+    /**
+     * UPSERT: Crear o actualizar entrevista
+     */
+    public function createOrUpdate(Request $request)
+    {
+        try {
+            DB::beginTransaction();
+
+            // Preparar los datos antes de insertar/actualizar
+            $data = $request->except([
+                'id',
+                'dependientes',
+                'redapoyo',
+                'id_espacio_digital',
+                'id_espacio_particular',
+                'id_espacio_publico',
+                'id_transporte_foraneo',
+                'id_transporte_urbano',
+                'id_transporte_privado',
+                'id_tipos_violencia',
+                'id_ambitos_violencia',
+                'id_efectos_fisicos',
+                'id_consecuencias_sexuales',
+                'id_efectos_psicologicos',
+                'id_efectos_economicos_patrimoniales',
+                'id_agente_lesion',
+                'id_aerea_anatomica_lesionada',
+                'id_drogas_agresor',
+                'id_servicios_trabajo_social',
+                'id_servicios_juridicos',
+                'id_servicios_psicologicos'
+            ]);
+            $data['id_user_created'] = Auth::id();
+
+            // 🔧 FORMATO DE FECHAS Y HORAS
+            if (isset($data['fecha_hecho']) && !empty($data['fecha_hecho'])) {
+                $data['fecha_hecho'] = Carbon::parse($data['fecha_hecho'])->format('Y-m-d');
+            }
+
+            if (isset($data['hora_hecho']) && !empty($data['hora_hecho'])) {
+                // Si viene como fecha completa, extraer solo la hora
+                if (strlen($data['hora_hecho']) > 8) {
+                    $data['hora_hecho'] = Carbon::parse($data['hora_hecho'])->format('H:i:s');
+                } elseif (!str_contains($data['hora_hecho'], ':')) {
+                    // Si viene como número o formato inválido, usar default
+                    $data['hora_hecho'] = '00:00:00';
+                }
+            }
+
+            if (isset($data['fecha_nacimiento']) && !empty($data['fecha_nacimiento'])) {
+                $data['fecha_nacimiento'] = Carbon::parse($data['fecha_nacimiento'])->format('Y-m-d');
+            }
+
+            if (isset($data['fecha_canalizacion']) && !empty($data['fecha_canalizacion'])) {
+                $data['fecha_canalizacion'] = Carbon::parse($data['fecha_canalizacion'])->format('Y-m-d H:i:s');
+            }
+
+            // Convertir booleanos a 0/1 (MySQL)
+            $booleanFields = [
+                'ocurrio_domicilio_victima',
+                'ocurrio_extranjero',
+                'dia_festivo',
+                'conoce_autoridad_asunto',
+                'canalizado_cabi',
+                'victima_delicuencia_organizada',
+                'relacion_denuncia',
+                'relacionado_orientacion_indetidad_genero',
+                'vive_extrajero',
+                'realiza_mas_actividades',
+                'migrante',
+                'pertenece_pueblo_indigena',
+                'tiene_discapacidad',
+                'discapacidad_causada_violencia',
+                'enfermedad_cronica_degenerativa',
+                'trastorno_neurologico_mental',
+                'tratado_medicamente_actualmente',
+                'embarazo',
+                'tiene_dependientes',
+                'vive_extranjero',
+                'vive_situacion_calle',
+                'tiene_adiccion',
+                'conoce_agresor',
+                'vive_domicilio_victima',
+                'acceso_armas_agresor',
+                'acceso_drogas_agresor'
+            ];
+
+            foreach ($booleanFields as $field) {
+                if (isset($data[$field])) {
+                    $data[$field] = filter_var($data[$field], FILTER_VALIDATE_BOOLEAN) ? 1 : 0;
+                }
+            }
+
+            // Buscar si existe
+            $entrevista = Entrevista::find($request->id);
+
+            if ($entrevista) {
+                // ACTUALIZAR
+                $entrevista->update($data);
+
+                // Eliminar relaciones viejas
+                $this->deleteRelations($entrevista->id);
+            } else {
+                // INSERTAR
+                $entrevista = Entrevista::create($data);
+            }
+
+            // Insertar dependientes (corregir tipos booleanos)
+            if ($request->has('dependientes') && is_array($request->dependientes)) {
+                foreach ($request->dependientes as $dep) {
+                    DB::table('dependientes')->insert([
+                        'entrevista_id' => $entrevista->id,
+                        'nombre' => $dep['nombre'] ?? null,
+                        'apellido_paterno' => $dep['apellido_paterno'] ?? null,
+                        'apellido_materno' => $dep['apellido_materno'] ?? null,
+                        'id_vinculo' => $dep['id_vinculo'] ?? null,
+                        'esta_riesgo' => isset($dep['esta_riesgo']) ? filter_var($dep['esta_riesgo'], FILTER_VALIDATE_BOOLEAN) : false,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+            }
+
+            // Insertar red de apoyo
+            if ($request->has('redapoyo') && is_array($request->redapoyo)) {
+                foreach ($request->redapoyo as $red) {
+                    DB::table('red_apoyo')->insert([
+                        'entrevista_id' => $entrevista->id,
+                        'nombre' => $red['nombre'] ?? null,
+                        'apellido_paterno' => $red['apellido_paterno'] ?? null,
+                        'apellido_materno' => $red['apellido_materno'] ?? null,
+                        'id_vinculo' => $red['id_vinculo'] ?? null,
+                        'cuenta_apoyo' => isset($red['cuenta_apoyo']) ? filter_var($red['cuenta_apoyo'], FILTER_VALIDATE_BOOLEAN) : false,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+            }
+
+            // Insertar relaciones muchos a muchos
+            $this->insertManyToMany('entrevista_espacios_digitales', $entrevista->id, 'id_espacio_digital', $request->id_espacio_digital ?? []);
+            $this->insertManyToMany('entrevista_espacios_particulares', $entrevista->id, 'id_espacio_particular', $request->id_espacio_particular ?? []);
+            $this->insertManyToMany('entrevista_espacios_publicos', $entrevista->id, 'id_espacio_publico', $request->id_espacio_publico ?? []);
+            $this->insertManyToMany('entrevista_transporte_foraneo', $entrevista->id, 'id_transporte_foraneo', $request->id_transporte_foraneo ?? []);
+            $this->insertManyToMany('entrevista_transporte_urbano', $entrevista->id, 'id_transporte_urbano', $request->id_transporte_urbano ?? []);
+            $this->insertManyToMany('entrevista_transporte_privado', $entrevista->id, 'id_transporte_privado', $request->id_transporte_privado ?? []);
+            $this->insertManyToMany('entrevista_tipos_violencia', $entrevista->id, 'id_tipo_violencia', $request->id_tipos_violencia ?? []);
+            $this->insertManyToMany('entrevista_ambitos_violencia', $entrevista->id, 'id_ambito_violencia', $request->id_ambitos_violencia ?? []);
+            $this->insertManyToMany('entrevista_efectos_fisicos', $entrevista->id, 'id_efecto_fisico', $request->id_efectos_fisicos ?? []);
+            $this->insertManyToMany('entrevista_consecuencias_sexuales', $entrevista->id, 'id_consecuencia_sexual', $request->id_consecuencias_sexuales ?? []);
+            $this->insertManyToMany('entrevista_efectos_psicologicos', $entrevista->id, 'id_efecto_psicologico', $request->id_efectos_psicologicos ?? []);
+            $this->insertManyToMany('entrevista_efectos_economicos', $entrevista->id, 'id_efecto_economico', $request->id_efectos_economicos_patrimoniales ?? []);
+            $this->insertManyToMany('entrevista_agente_lesion', $entrevista->id, 'id_agente_lesion', $request->id_agente_lesion ?? []);
+            $this->insertManyToMany('entrevista_area_anatomica', $entrevista->id, 'id_area_anatomica', $request->id_aerea_anatomica_lesionada ?? []);
+            $this->insertManyToMany('entrevista_drogas_agresor', $entrevista->id, 'id_droga', $request->id_drogas_agresor ?? []);
+            $this->insertManyToMany('entrevista_servicios_trabajo_social', $entrevista->id, 'id_servicio', $request->id_servicios_trabajo_social ?? []);
+            $this->insertManyToMany('entrevista_servicios_juridicos', $entrevista->id, 'id_servicio', $request->id_servicios_juridicos ?? []);
+            $this->insertManyToMany('entrevista_servicios_psicologicos', $entrevista->id, 'id_servicio', $request->id_servicios_psicologicos ?? []);
+
+            DB::commit();
+
+            return ApiResponse::success(
+                $entrevista,
+                $entrevista->wasRecentlyCreated ? 'Entrevista creada exitosamente' : 'Entrevista actualizada exitosamente'
+            );
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::info($e->getMessage());
+            return ApiResponse::error('Ocurrio un error', 500);
+        }
+    }
+
+    /**
+     * GET: Obtener entrevista completa con INNER JOINS
+     */
+
+    public function all()
+    {
+        try {
+            $entrevistas = Entrevista::query();
+            if (!in_array(Auth::user()->id_rol, [1, 2])) {
+                $entrevistas->where('id_user_created', Auth::id());
+            }
+            else{
+
+                $entrevistas = Entrevista::where('id_user_created', Auth::id())->get();
+            }            
+
+            if ($entrevistas->isEmpty()) {
+                return response()->json([
+                    'success' => true,
+                    'data' => [],
+                    'message' => 'No hay entrevistas registradas'
+                ]);
+            }
+
+            // Preparar el resultado
+            $result = [];
+
+            foreach ($entrevistas as $entrevista) {
+                $item = (array) $entrevista;
+                $id = $entrevista->id;
+
+                // Cargar relaciones uno a muchos (listas de objetos)
+                $item['dependientes'] = DB::table('dependientes')
+                    ->where('entrevista_id', $id)
+                    ->get();
+
+                $item['redapoyo'] = DB::table('red_apoyo')
+                    ->where('entrevista_id', $id)
+                    ->get();
+
+                // Cargar relaciones muchos a muchos (arrays de IDs)
+                $item['id_espacio_digital'] = DB::table('entrevista_espacios_digitales')
+                    ->where('entrevista_id', $id)
+                    ->pluck('id_espacio_digital')
+                    ->toArray();
+
+                $item['id_espacio_particular'] = DB::table('entrevista_espacios_particulares')
+                    ->where('entrevista_id', $id)
+                    ->pluck('id_espacio_particular')
+                    ->toArray();
+
+                $item['id_espacio_publico'] = DB::table('entrevista_espacios_publicos')
+                    ->where('entrevista_id', $id)
+                    ->pluck('id_espacio_publico')
+                    ->toArray();
+
+                $item['id_transporte_foraneo'] = DB::table('entrevista_transporte_foraneo')
+                    ->where('entrevista_id', $id)
+                    ->pluck('id_transporte_foraneo')
+                    ->toArray();
+
+                $item['id_transporte_urbano'] = DB::table('entrevista_transporte_urbano')
+                    ->where('entrevista_id', $id)
+                    ->pluck('id_transporte_urbano')
+                    ->toArray();
+
+                $item['id_transporte_privado'] = DB::table('entrevista_transporte_privado')
+                    ->where('entrevista_id', $id)
+                    ->pluck('id_transporte_privado')
+                    ->toArray();
+
+                $item['id_tipos_violencia'] = DB::table('entrevista_tipos_violencia')
+                    ->where('entrevista_id', $id)
+                    ->pluck('id_tipo_violencia')
+                    ->toArray();
+
+                $item['id_ambitos_violencia'] = DB::table('entrevista_ambitos_violencia')
+                    ->where('entrevista_id', $id)
+                    ->pluck('id_ambito_violencia')
+                    ->toArray();
+
+                $item['id_efectos_fisicos'] = DB::table('entrevista_efectos_fisicos')
+                    ->where('entrevista_id', $id)
+                    ->pluck('id_efecto_fisico')
+                    ->toArray();
+
+                $item['id_consecuencias_sexuales'] = DB::table('entrevista_consecuencias_sexuales')
+                    ->where('entrevista_id', $id)
+                    ->pluck('id_consecuencia_sexual')
+                    ->toArray();
+
+                $item['id_efectos_psicologicos'] = DB::table('entrevista_efectos_psicologicos')
+                    ->where('entrevista_id', $id)
+                    ->pluck('id_efecto_psicologico')
+                    ->toArray();
+
+                $item['id_efectos_economicos_patrimoniales'] = DB::table('entrevista_efectos_economicos')
+                    ->where('entrevista_id', $id)
+                    ->pluck('id_efecto_economico')
+                    ->toArray();
+
+                $item['id_agente_lesion'] = DB::table('entrevista_agente_lesion')
+                    ->where('entrevista_id', $id)
+                    ->pluck('id_agente_lesion')
+                    ->toArray();
+
+                $item['id_aerea_anatomica_lesionada'] = DB::table('entrevista_area_anatomica')
+                    ->where('entrevista_id', $id)
+                    ->pluck('id_area_anatomica')
+                    ->toArray();
+
+                $item['id_drogas_agresor'] = DB::table('entrevista_drogas_agresor')
+                    ->where('entrevista_id', $id)
+                    ->pluck('id_droga')
+                    ->toArray();
+
+                $item['id_servicios_trabajo_social'] = DB::table('entrevista_servicios_trabajo_social')
+                    ->where('entrevista_id', $id)
+                    ->pluck('id_servicio')
+                    ->toArray();
+
+                $item['id_servicios_juridicos'] = DB::table('entrevista_servicios_juridicos')
+                    ->where('entrevista_id', $id)
+                    ->pluck('id_servicio')
+                    ->toArray();
+
+                $item['id_servicios_psicologicos'] = DB::table('entrevista_servicios_psicologicos')
+                    ->where('entrevista_id', $id)
+                    ->pluck('id_servicio')
+                    ->toArray();
+
+                $result[] = $item;
+            }
+
+            return ApiResponse::success(
+                $result,
+                'data de entrevistas'
+            );
+        
+        } catch (\Exception $e) {
+            Log::error($e->getMessage());
+            return ApiResponse::error('Ocurrio un error', 500);
+        }
+    }
+
+    /**
+     * Helper: Eliminar relaciones
+     */
+    private function deleteRelations($entrevistaId)
+    {
+        DB::table('dependientes')->where('entrevista_id', $entrevistaId)->delete();
+        DB::table('red_apoyo')->where('entrevista_id', $entrevistaId)->delete();
+        DB::table('entrevista_espacios_digitales')->where('entrevista_id', $entrevistaId)->delete();
+        DB::table('entrevista_espacios_particulares')->where('entrevista_id', $entrevistaId)->delete();
+        DB::table('entrevista_espacios_publicos')->where('entrevista_id', $entrevistaId)->delete();
+        DB::table('entrevista_transporte_foraneo')->where('entrevista_id', $entrevistaId)->delete();
+        DB::table('entrevista_transporte_urbano')->where('entrevista_id', $entrevistaId)->delete();
+        DB::table('entrevista_transporte_privado')->where('entrevista_id', $entrevistaId)->delete();
+        DB::table('entrevista_tipos_violencia')->where('entrevista_id', $entrevistaId)->delete();
+        DB::table('entrevista_ambitos_violencia')->where('entrevista_id', $entrevistaId)->delete();
+        DB::table('entrevista_efectos_fisicos')->where('entrevista_id', $entrevistaId)->delete();
+        DB::table('entrevista_consecuencias_sexuales')->where('entrevista_id', $entrevistaId)->delete();
+        DB::table('entrevista_efectos_psicologicos')->where('entrevista_id', $entrevistaId)->delete();
+        DB::table('entrevista_efectos_economicos')->where('entrevista_id', $entrevistaId)->delete();
+        DB::table('entrevista_agente_lesion')->where('entrevista_id', $entrevistaId)->delete();
+        DB::table('entrevista_area_anatomica')->where('entrevista_id', $entrevistaId)->delete();
+        DB::table('entrevista_drogas_agresor')->where('entrevista_id', $entrevistaId)->delete();
+        DB::table('entrevista_servicios_trabajo_social')->where('entrevista_id', $entrevistaId)->delete();
+        DB::table('entrevista_servicios_juridicos')->where('entrevista_id', $entrevistaId)->delete();
+        DB::table('entrevista_servicios_psicologicos')->where('entrevista_id', $entrevistaId)->delete();
+    }
+
+    /**
+     * Helper: Insertar relaciones muchos a muchos
+     */
+    private function insertManyToMany($table, $entrevistaId, $column, $values)
+    {
+        if (empty($values) || !is_array($values)) {
+            return;
+        }
+
+        $inserts = [];
+        foreach ($values as $value) {
+            $inserts[] = [
+                'entrevista_id' => $entrevistaId,
+                $column => $value,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ];
+        }
+
+        if (!empty($inserts)) {
+            DB::table($table)->insert($inserts);
+        }
+    }
+
+    public function lobyPsicologico(){
+        try {
+            $query = Entrevista::select(
+                'entrevistas.id',
+                'entrevistas.curp',
+                DB::raw("GROUP_CONCAT(sp.nombre SEPARATOR ', ') as servicios_psicologicos")
+            )
+                ->join('entrevista_servicios_psicologicos as esp', 'esp.entrevista_id', '=', 'entrevistas.id')
+                ->join('servicios_psicologicos as sp', 'sp.id', '=', 'esp.id_servicio')
+                ->groupBy('entrevistas.id', 'entrevistas.curp')->get();
+            return ApiResponse::success(
+                $query,
+                'data de entrevistas'
+            );
+        } catch (\Exception $e) {
+            Log::error($e->getMessage());
+            return ApiResponse::error('Ocurrio un error', 500);
+        }
+    }
+}

@@ -84,7 +84,7 @@ class UsersController extends Controller
             'password' => 'required|string',
         ]);
 
-        $user = User::where('usuario', $request->usuario)->first();
+        $user = User::where('usuario', $request->usuario)->where('activo',1)->first();
 
         if (!$user || !Hash::check($request->password, $user->password)) {
             return ApiResponse::error('Credenciales incorrectas', 401);

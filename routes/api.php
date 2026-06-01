@@ -12,6 +12,7 @@ use App\Http\Controllers\DiscapacidadesController;
 use App\Http\Controllers\EfectosEconomicosPatrimonialesController;
 use App\Http\Controllers\EfectosFisicosController;
 use App\Http\Controllers\EfectosPsicologicosController;
+use App\Http\Controllers\EntrevistasController;
 use App\Http\Controllers\EspacioDigitalController;
 use App\Http\Controllers\EspacioParticularController;
 use App\Http\Controllers\EspacioPublicoController;
@@ -163,6 +164,16 @@ Route::middleware('auth:sanctum')->group(function () {
 
         Route::delete('/delete', [UsersController::class, 'unChange']);
     });
+    Route::prefix('/entrevista')->group(function () {
+        Route::get('/', [EntrevistasController::class, 'all']);
+
+        Route::post('/createorUpdate', [EntrevistasController::class, 'createorUpdate']);
+        Route::get('/psicologo', [EntrevistasController::class, 'lobyPsicologico']);
+
+        // Route::delete('/delete', [EntrevistasController::class, 'unChange']);
+    });
+
+
     Route::prefix('/roles')->group(function () {
         Route::get('/', [RolesController::class, 'index']);
         Route::post('/unchangepermissions', [RolesController::class, 'unChangePermissions']);
