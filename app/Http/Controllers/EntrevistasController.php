@@ -228,37 +228,56 @@ class EntrevistasController extends Controller
     {
         try {
             // Para roles 1 y 2 (admin/superadmin) -> ven TODAS las entrevistas
-            // Para otros roles -> solo ven las que ellos crearon
             if (in_array(Auth::user()->id_rol, [1, 2])) {
-                $entrevistas = Entrevista::all();
+                $entrevistas = DB::table('entrevistas as e')
+                    ->leftJoin('usuarios as u', 'e.id_user_created', '=', 'u.id')
+                    ->select(
+                        'e.*',
+                        'u.nombre_completo as creado_por',
+                        'u.id as creado_por_id'
+                    )
+                    ->get();
             } else {
-                $entrevistas = Entrevista::where('id_user_created', Auth::id())->get();
+                $entrevistas = DB::table('entrevistas as e')
+                    ->leftJoin('usuarios as u', 'e.id_user_created', '=', 'u.id')
+                    ->where('e.id_user_created', Auth::id())
+                    ->select(
+                        'e.*',
+                        'u.nombre_completo as creado_por',
+                        'u.id as creado_por_id'
+                    )
+                    ->get();
             }
 
             if ($entrevistas->isEmpty()) {
-                return ApiResponse::success(
-                    [],
-                    'No hay entrevistas registradas'
-                );
+                return ApiResponse::success([], 'No hay entrevistas registradas');
             }
 
-            // Preparar el resultado
             $result = [];
 
             foreach ($entrevistas as $entrevista) {
-                $item = $entrevista->toArray();
-                $id = $entrevista->id;
+                // ✅ Convertir stdClass a array
+                $item = (array) $entrevista;
+                $id = $entrevista->id;  // stdClass accede con ->, no con array
 
-                // Cargar relaciones uno a muchos (listas de objetos)
+                // Cargar dependientes
                 $item['dependientes'] = DB::table('dependientes')
                     ->where('entrevista_id', $id)
-                    ->get();
+                    ->get()
+                    ->map(function ($dep) {
+                        return (array) $dep;
+                    })
+                    ->toArray();
 
                 $item['redapoyo'] = DB::table('red_apoyo')
                     ->where('entrevista_id', $id)
-                    ->get();
+                    ->get()
+                    ->map(function ($red) {
+                        return (array) $red;
+                    })
+                    ->toArray();
 
-                // Cargar relaciones muchos a muchos (arrays de IDs)
+                // Relaciones muchos a muchos (pluck ya devuelve arrays simples)
                 $item['id_espacio_digital'] = DB::table('entrevista_espacios_digitales')
                     ->where('entrevista_id', $id)
                     ->pluck('id_espacio_digital')
@@ -352,13 +371,10 @@ class EntrevistasController extends Controller
                 $result[] = $item;
             }
 
-            return ApiResponse::success(
-                $result,
-                'Datos de entrevistas obtenidos correctamente'
-            );
+            return ApiResponse::success($result, 'Datos de entrevistas obtenidos correctamente');
         } catch (\Exception $e) {
             Log::error('Error en all(): ' . $e->getMessage());
-            return ApiResponse::error('Ocurrió un error', 500);
+            return ApiResponse::error('Ocurrió un error: ' . $e->getMessage(), 500);
         }
     }
 
