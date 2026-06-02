@@ -78,7 +78,7 @@ class EntrevistasController extends Controller
                 'id_servicios_juridicos',
                 'id_servicios_psicologicos'
             ]);
-            $data['id_user_created'] = Auth::user()->id;
+        
 
             // 🔧 FORMATO DE FECHAS Y HORAS
             if (isset($data['fecha_hecho']) && !empty($data['fecha_hecho'])) {
@@ -150,6 +150,8 @@ class EntrevistasController extends Controller
                 $this->deleteRelations($entrevista->id);
             } else {
                 // INSERTAR
+                $data['id_user_created'] = Auth::user()->id;
+
                 $entrevista = Entrevista::create($data);
             }
 

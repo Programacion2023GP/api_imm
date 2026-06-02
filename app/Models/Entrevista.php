@@ -98,6 +98,8 @@ class Entrevista extends Model
         'id_canalizacion',
         'fecha_canalizacion',
         'responsable',
-        'observaciones'
+        'observaciones',
+        'id_user_created',  // ← DEBE ESTAR AQUÍ
+
     ];
 }
