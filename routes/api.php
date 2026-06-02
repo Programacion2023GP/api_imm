@@ -166,6 +166,8 @@ Route::middleware('auth:sanctum')->group(function () {
     });
     Route::prefix('/entrevista')->group(function () {
         Route::get('/', [EntrevistasController::class, 'all']);
+        Route::get('/all', [EntrevistasController::class, 'alldata']);
+        Route::get('show/{id}', [EntrevistasController::class, 'show']);
 
         Route::post('/createorUpdate', [EntrevistasController::class, 'createorUpdate']);
         Route::get('/psicologo', [EntrevistasController::class, 'lobyPsicologico']);
