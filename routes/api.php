@@ -17,11 +17,13 @@ use App\Http\Controllers\EspacioDigitalController;
 use App\Http\Controllers\EspacioParticularController;
 use App\Http\Controllers\EspacioPublicoController;
 use App\Http\Controllers\EstadoCivilController;
+use App\Http\Controllers\EvaluacionPsicologicaController;
 use App\Http\Controllers\IdentidadGeneroController;
 use App\Http\Controllers\IngresosPromediosController;
 use App\Http\Controllers\OcupacionesController;
 use App\Http\Controllers\OrientacionSexualController;
 use App\Http\Controllers\PermisosController;
+use App\Http\Controllers\ProblematicaAbordadaController;
 use App\Http\Controllers\RelacionController;
 use App\Http\Controllers\RolesController;
 use App\Http\Controllers\ServicioMedicoController;
@@ -35,7 +37,7 @@ use App\Http\Controllers\TransportePrivadoController;
 use App\Http\Controllers\TransporteUrbanoController;
 use App\Http\Controllers\UltimoGradoEstudiosController;
 use App\Http\Controllers\UsersController;
-
+use App\Http\Controllers\ViolenciaAsociadaController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -157,6 +159,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('/dependencias')->group(function () {
         Route::get('/', [DependenciasController::class, 'index']);
     });
+    Route::prefix('/problematicaabordada')->group(function () {
+        Route::get('/', [ProblematicaAbordadaController::class, 'index']);
+    });
+    Route::prefix('/violenciaasociada')->group(function () {
+        Route::get('/', [ViolenciaAsociadaController::class, 'index']);
+    });
     Route::prefix('/usuarios')->group(function () {
         Route::get('/', [UsersController::class, 'index']);
 
@@ -174,7 +182,14 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Route::delete('/delete', [EntrevistasController::class, 'unChange']);
     });
-
+  
+    Route::prefix('/evaluacionpsicologica')->group(function () {
+        Route::get('/', [EvaluacionPsicologicaController::class, 'index']);
+        Route::get('/catalogos', [EvaluacionPsicologicaController::class, 'catalogos']);
+        Route::post('/createorUpdate', [EvaluacionPsicologicaController::class, 'store']);
+        Route::delete('delete', [EvaluacionPsicologicaController::class, 'destroy']);
+    });
+    
 
     Route::prefix('/roles')->group(function () {
         Route::get('/', [RolesController::class, 'index']);

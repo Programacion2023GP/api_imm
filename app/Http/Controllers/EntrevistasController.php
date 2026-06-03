@@ -78,7 +78,7 @@ class EntrevistasController extends Controller
                 'id_servicios_juridicos',
                 'id_servicios_psicologicos'
             ]);
-        
+
 
             // 🔧 FORMATO DE FECHAS Y HORAS
             if (isset($data['fecha_hecho']) && !empty($data['fecha_hecho'])) {
@@ -638,35 +638,56 @@ class EntrevistasController extends Controller
     public function alldata()
     {
         try {
-            // Para roles 1 y 2 (admin/superadmin) -> ven TODAS las entrevistas
-            // Para otros roles -> solo ven las que ellos crearon
-                $entrevistas = Entrevista::all();
-           
+            // Si necesitas filtrar por rol, descomenta las líneas siguientes:
+            // if (in_array(Auth::user()->id_rol, [1, 2])) {
+            //     $entrevistas = DB::table('entrevistas as e')
+            //         ->leftJoin('usuarios as u', 'e.id_user_created', '=', 'u.id')
+            //         ->select('e.*', 'u.nombre_completo as creado_por', 'u.id as creado_por_id')
+            //         ->get();
+            // } else {
+            //     $entrevistas = DB::table('entrevistas as e')
+            //         ->leftJoin('usuarios as u', 'e.id_user_created', '=', 'u.id')
+            //         ->where('e.id_user_created', Auth::id())
+            //         ->select('e.*', 'u.nombre_completo as creado_por', 'u.id as creado_por_id')
+            //         ->get();
+            // }
+
+            // Por ahora, sin filtro de rol (todos)
+            $entrevistas = DB::table('entrevistas as e')
+                ->leftJoin('usuarios as u', 'e.id_user_created', '=', 'u.id')
+                ->select('e.*', 'u.nombre_completo as creado_por', 'u.id as creado_por_id')
+                ->get();
 
             if ($entrevistas->isEmpty()) {
-                return ApiResponse::success(
-                    [],
-                    'No hay entrevistas registradas'
-                );
+                return ApiResponse::success([], 'No hay entrevistas registradas');
             }
 
-            // Preparar el resultado
             $result = [];
 
             foreach ($entrevistas as $entrevista) {
-                $item = $entrevista->toArray();
-                $id = $entrevista->id;
+                // Convertir stdClass a array
+                $item = (array) $entrevista;
+                $id = $entrevista->id; // stdClass accede con ->, no con array
 
-                // Cargar relaciones uno a muchos (listas de objetos)
+                // Dependientes (convertir a array)
                 $item['dependientes'] = DB::table('dependientes')
                     ->where('entrevista_id', $id)
-                    ->get();
+                    ->get()
+                    ->map(function ($dep) {
+                        return (array) $dep;
+                    })
+                    ->toArray();
 
+                // Red de apoyo
                 $item['redapoyo'] = DB::table('red_apoyo')
                     ->where('entrevista_id', $id)
-                    ->get();
+                    ->get()
+                    ->map(function ($red) {
+                        return (array) $red;
+                    })
+                    ->toArray();
 
-                // Cargar relaciones muchos a muchos (arrays de IDs)
+                // Relaciones muchos a muchos (pluck ya devuelve arrays simples)
                 $item['id_espacio_digital'] = DB::table('entrevista_espacios_digitales')
                     ->where('entrevista_id', $id)
                     ->pluck('id_espacio_digital')
@@ -760,12 +781,9 @@ class EntrevistasController extends Controller
                 $result[] = $item;
             }
 
-            return ApiResponse::success(
-                $result,
-                'Datos de entrevistas obtenidos correctamente'
-            );
+            return ApiResponse::success($result, 'Datos de entrevistas obtenidos correctamente');
         } catch (\Exception $e) {
-            Log::error('Error en all(): ' . $e->getMessage());
+            Log::error('Error en alldata(): ' . $e->getMessage());
             return ApiResponse::error('Ocurrió un error', 500);
         }
     }
@@ -820,23 +838,59 @@ class EntrevistasController extends Controller
         }
     }
 
-    public function lobyPsicologico(){
+    public function lobyPsicologico()
+    {
         try {
             $query = Entrevista::select(
                 'entrevistas.id',
                 'entrevistas.curp',
+                'entrevistas.nombre',
+                'entrevistas.edad',
+                'entrevistas.telefono',
+                'entrevistas.codigo_postal',
+                'entrevistas.colonia',
+                'entrevistas.estado',
+                'entrevistas.municipio',
+                'entrevistas.localidad',
+                'entrevistas.calle',
+                'entrevistas.num_ext',
+                'entrevistas.num_int',
+                'entrevistas.entre_calles',
+                'entrevistas.referencias',
+                'entrevistas.zona',
                 DB::raw("GROUP_CONCAT(sp.nombre SEPARATOR ', ') as servicios_psicologicos")
             )
                 ->join('entrevista_servicios_psicologicos as esp', 'esp.entrevista_id', '=', 'entrevistas.id')
                 ->join('servicios_psicologicos as sp', 'sp.id', '=', 'esp.id_servicio')
-                ->groupBy('entrevistas.id', 'entrevistas.curp')->get();
+                ->leftJoin('evaluaciones_psicologicas as ep', 'ep.id_entrevista', '=', 'entrevistas.id')
+                ->whereNull('ep.id_entrevista')  // Solo entrevistas que NO tienen evaluación
+                ->groupBy(
+                    'entrevistas.id',
+                    'entrevistas.curp',
+                    'entrevistas.nombre',
+                    'entrevistas.edad',
+                    'entrevistas.telefono',
+                    'entrevistas.codigo_postal',
+                    'entrevistas.colonia',
+                    'entrevistas.estado',
+                    'entrevistas.municipio',
+                    'entrevistas.localidad',
+                    'entrevistas.calle',
+                    'entrevistas.num_ext',
+                    'entrevistas.num_int',
+                    'entrevistas.entre_calles',
+                    'entrevistas.referencias',
+                    'entrevistas.zona'
+                )
+                ->get();
+
             return ApiResponse::success(
                 $query,
-                'data de entrevistas'
+                'Data de entrevistas sin evaluación psicológica'
             );
         } catch (\Exception $e) {
             Log::error($e->getMessage());
-            return ApiResponse::error('Ocurrio un error', 500);
+            return ApiResponse::error('Ocurrió un error', 500);
         }
     }
 }

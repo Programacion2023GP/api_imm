@@ -99,6 +99,7 @@ class Entrevista extends Model
         'fecha_canalizacion',
         'responsable',
         'observaciones',
+        'nombre',
         'id_user_created',  // ← DEBE ESTAR AQUÍ
 
     ];

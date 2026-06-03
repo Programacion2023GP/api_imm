@@ -94,7 +94,7 @@ class UsersController extends Controller
             ->join('usuarios', 'usuarios.id_rol', '=', 'roles_permisos.id_rol')
 
             ->where('usuarios.id', $user->id)
-            ->pluck('permisos.nombre_permiso');        // Crear token
+            ->pluck('permisos.nombre_permiso');    
         $token = $user->createToken('auth_token', $permisos->toArray())->plainTextToken;
 
         return ApiResponse::success([
