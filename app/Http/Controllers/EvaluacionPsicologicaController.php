@@ -277,7 +277,7 @@ class EvaluacionPsicologicaController extends Controller
             $evaluaciones = $evaluaciones->get();
             return ApiResponse::success($evaluaciones, 'Lista de espera');
         } catch (\Exception $e) {
-            return ApiResponse::error('Ocurrio un error');
+            return ApiResponse::error('Ocurrio un error' .$e->getMessage());
         }
     }
 }
