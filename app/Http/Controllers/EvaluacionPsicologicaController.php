@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 use App\Models\EvaluacionPsicologica;
 use App\Models\ApiResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
@@ -261,5 +262,22 @@ class EvaluacionPsicologicaController extends Controller
         }
 
         return $evaluaciones;
+    }
+    public function agenda(Request $request){
+        try {
+            $evaluaciones = DB::table('evaluaciones_psicologicas as ep')->join('entrevistas as e','e.id', 'ep.id_entrevista')
+                ->select(
+                'e.nombre',
+                'ep.id'
+                   
+                );
+            if (Auth::user()->id_rol == 4) {
+                $evaluaciones =   $evaluaciones->where('ep.id_responsable',Auth::id());
+            }
+            $evaluaciones = $evaluaciones->get();
+            return ApiResponse::success($evaluaciones, 'Lista de espera');
+        } catch (\Exception $e) {
+            return ApiResponse::error('Ocurrio un error');
+        }
     }
 }

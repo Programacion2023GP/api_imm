@@ -3,6 +3,7 @@
 use App\Http\Controllers\ActividadPrincipalController;
 use App\Http\Controllers\AgenteLesionController;
 use App\Http\Controllers\AmbitoViolenciaController;
+use App\Http\Controllers\AgendaController;
 use App\Http\Controllers\AreaAnatomicaLesionadaController;
 use App\Http\Controllers\ArmasController;
 use App\Http\Controllers\CanalizacionController;
@@ -188,6 +189,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/catalogos', [EvaluacionPsicologicaController::class, 'catalogos']);
         Route::post('/createorUpdate', [EvaluacionPsicologicaController::class, 'store']);
         Route::delete('delete', [EvaluacionPsicologicaController::class, 'destroy']);
+        Route::get('/agenda', [EvaluacionPsicologicaController::class, 'agenda']);
     });
     
 
@@ -198,5 +200,21 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/createorUpdate', [RolesController::class, 'createorUpdate']);
 
         Route::delete('/delete', [RolesController::class, 'unChange']);
+    });
+    Route::prefix('agenda')->group(function () {
+        // GET
+        Route::get('datosiniciales', [AgendaController::class, 'obtenerDatosIniciales']);
+        Route::get('estadisticas', [AgendaController::class, 'obtenerEstadisticas']);
+
+        // POST / PUT
+        Route::post('citas', [AgendaController::class, 'guardarCita']);
+        Route::post('cierrescaso', [AgendaController::class, 'guardarCierreCaso']);
+        Route::delete('cierrescaso/{personaId}', [AgendaController::class, 'reabrirCaso']);
+
+        // PATCH
+        Route::post('/citas/{id}/mover', [AgendaController::class, 'moverCita']);
+
+        // DELETE
+        Route::delete('/citas/{id}', [AgendaController::class, 'eliminarCita']);
     });
 });
