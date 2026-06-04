@@ -278,7 +278,6 @@ class AgendaController extends Controller
         $validator = Validator::make($request->all(), [
             'personaId' => 'required|exists:evaluaciones_psicologicas,id',
             'diagnosticoFinal' => 'required|string',
-            'motivo' => 'required|string|in:Conclusión del proceso,Usuaria ya no acudio,Usuaria referenciada a otra instancia,Otro',
             'otroMotivo' => 'required_if:motivo,Otro|nullable|string|min:3',
             'fechaCierre' => 'required|date_format:Y-m-d',
         ]);
