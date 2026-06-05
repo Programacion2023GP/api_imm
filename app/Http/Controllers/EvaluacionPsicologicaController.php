@@ -263,21 +263,79 @@ class EvaluacionPsicologicaController extends Controller
 
         return $evaluaciones;
     }
-    public function agenda(Request $request){
+    public function agenda(Request $request)
+    {
         try {
-            $evaluaciones = DB::table('evaluaciones_psicologicas as ep')->join('entrevistas as e','e.id', 'ep.id_entrevista')
+            // 1. Obtener las evaluaciones principales
+            $evaluaciones = DB::table('evaluaciones_psicologicas as ep')
+                ->leftJoin('entrevistas as e', 'e.id', '=', 'ep.id_entrevista')
                 ->select(
-                'e.nombre',
-                'ep.*'
-                   
+                    'ep.*',
+                    'e.id as folio',
+                    'e.nombre',
+                    'e.edad',
+                    'e.telefono',
+                    'e.codigo_postal',
+                    'e.colonia',
+                    'e.estado',
+                    'e.municipio',
+                    'e.localidad',
+                    'e.calle',
+                    'e.num_ext',
+                    'e.num_int',
+                    'e.entre_calles',
+                    'e.referencias',
+                    'e.zona',
                 );
+
+            // Filtrar por rol de psicólogo
             if (Auth::user()->id_rol == 4) {
-                $evaluaciones =   $evaluaciones->where('ep.id_responsable',Auth::id());
+                $evaluaciones = $evaluaciones->where('ep.id_responsable', Auth::id());
             }
+
             $evaluaciones = $evaluaciones->get();
+
+            // Obtener IDs de evaluaciones
+            $evaluacionesIds = $evaluaciones->pluck('id')->toArray();
+
+            if (!empty($evaluacionesIds)) {
+                // Obtener todas las problemáticas agrupadas por evaluación
+                $problematicasPorEvaluacion = DB::table('evaluaciones_problematicas')
+                    ->whereIn('id_evaluacion', $evaluacionesIds)
+                    ->select('id_evaluacion', 'id_problematica')
+                    ->get()
+                    ->groupBy('id_evaluacion')
+                    ->map(function ($items) {
+                        return $items->pluck('id_problematica')->toArray();
+                    });
+
+                // Obtener todas las violencias agrupadas por evaluación
+                $violenciasPorEvaluacion = DB::table('evaluaciones_violencias')
+                    ->whereIn('id_evaluacion', $evaluacionesIds)
+                    ->select('id_evaluacion', 'id_violencia')
+                    ->get()
+                    ->groupBy('id_evaluacion')
+                    ->map(function ($items) {
+                        return $items->pluck('id_violencia')->toArray();
+                    });
+
+                // Asignar los arrays de IDs a cada evaluación
+                foreach ($evaluaciones as $evaluacion) {
+                    $evaluacion->id_problematica_abordada = $problematicasPorEvaluacion[$evaluacion->id] ?? [];
+                    $evaluacion->id_violencia_asociada = $violenciasPorEvaluacion[$evaluacion->id] ?? [];
+                }
+            } else {
+                // Si no hay evaluaciones, agregar arrays vacíos a la colección para mantener consistencia
+                $evaluaciones = $evaluaciones->map(function ($evaluacion) {
+                    $evaluacion->id_problematica_abordada = [];
+                    $evaluacion->id_violencia_asociada = [];
+                    return $evaluacion;
+                });
+            }
+
             return ApiResponse::success($evaluaciones, 'Lista de espera');
         } catch (\Exception $e) {
-            return ApiResponse::error('Ocurrio un error' );
+            return ApiResponse::error('Ocurrió un error: ' . $e->getMessage());
         }
     }
 }
