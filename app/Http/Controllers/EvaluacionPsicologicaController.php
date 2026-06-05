@@ -268,7 +268,7 @@ class EvaluacionPsicologicaController extends Controller
             $evaluaciones = DB::table('evaluaciones_psicologicas as ep')->join('entrevistas as e','e.id', 'ep.id_entrevista')
                 ->select(
                 'e.nombre',
-                'ep.id'
+                'ep.*'
                    
                 );
             if (Auth::user()->id_rol == 4) {
