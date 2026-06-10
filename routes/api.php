@@ -180,6 +180,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
         Route::post('/createorUpdate', [EntrevistasController::class, 'createorUpdate']);
         Route::get('/psicologo', [EntrevistasController::class, 'lobyPsicologico']);
+        Route::get('/juridico', [EntrevistasController::class, 'lobyJuridico']);
 
         // Route::delete('/delete', [EntrevistasController::class, 'unChange']);
     });

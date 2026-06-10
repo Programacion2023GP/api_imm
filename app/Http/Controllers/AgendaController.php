@@ -32,10 +32,16 @@ class AgendaController extends Controller
             // Obtener personas activas con JOIN a entrevistas
             $query = DB::table('evaluaciones_psicologicas as e')
                 ->join('entrevistas as ent', 'e.id_entrevista', '=', 'ent.id')
+                ->join('usuarios as u', 'e.id_responsable', '=', 'u.id') // ✅ JOIN con usuarios para nombre del psicólogo
+
                 ->select(
                     'e.id',
                     'ent.nombre',
-                );
+                    'ent.id as folio',
+                'ent.telefono',
+
+                'u.nombre_completo'      // ✅ Nombre del psicólogo
+            );
 
             $query = $this->aplicarFiltroResponsable($query);
             $personas = $query->get();
@@ -49,17 +55,42 @@ class AgendaController extends Controller
 
             // Obtener citas
             // En el método obtenerDatosIniciales, modifica la transformación de citas:
-            $citas = Cita::whereIn('evaluacion_psicologica_id', $evaluacionesIds)
+            $citas = DB::table('citas as c')
+                ->join('evaluaciones_psicologicas as e', 'c.evaluacion_psicologica_id', '=', 'e.id')
+                ->join('entrevistas as ent', 'e.id_entrevista', '=', 'ent.id')
+                ->join('usuarios as u', 'e.id_responsable', '=', 'u.id') // ✅ JOIN con usuarios para nombre del psicólogo
+                ->whereIn('c.evaluacion_psicologica_id', $evaluacionesIds)
+                ->select(
+                    'c.id',
+                    'c.evaluacion_psicologica_id as personaId',
+                    'c.fecha',
+                    'c.hora',
+                    'c.duracion',
+                    'c.asistio',
+                    'c.notas_seguimiento as notasSeguimiento',
+                    'ent.id as folio',
+                'c.primeravez', // 👈 AGREGAR ESTA LÍNEA
+
+                'ent.telefono',
+                // ✅ Folio desde entrevistas
+                'u.nombre_completo'      // ✅ Nombre del psicólogo
+                )
                 ->get()
                 ->map(function ($c) {
                     return [
                         'id' => (string) $c->id,
-                        'personaId' => $c->evaluacion_psicologica_id,
-                        'fecha' => date('Y-m-d', strtotime($c->fecha)), // ✅ Formato correcto
-                        'hora' => date('H:i', strtotime($c->hora)),     // ✅ Formato correcto
-                        'duracion' => $c->duracion,
-                        'asistio' => (bool) $c->asistio,
-                        'notasSeguimiento' => $c->notas_seguimiento ?? '',
+                        'personaId' => $c->personaId,
+                        'folio' => $c->folio,
+                        'nombre_completo' => $c->nombre_completo ?? 'No asignado',
+                        'fecha' => date('Y-m-d', strtotime($c->fecha)),
+                        'hora' => date('H:i', strtotime($c->hora)),
+                    'primeravez' => (bool) $c->primeravez, // 👈 AGREGAR
+
+                    'duracion' => $c->duracion,
+                    'telefono' => $c->telefono,
+
+                    'asistio' => (bool) $c->asistio,
+                        'notasSeguimiento' => $c->notasSeguimiento ?? '',
                     ];
                 });
 
@@ -141,6 +172,8 @@ class AgendaController extends Controller
             'hora' => 'required|date_format:H:i',
             'duracion' => 'required|integer|min:5|max:480',
             'asistio' => 'boolean',
+            'primeravez' => 'boolean',
+
             'notasSeguimiento' => 'nullable|string|max:1000',
         ]);
 
@@ -175,6 +208,8 @@ class AgendaController extends Controller
                     'hora' => $request->hora,
                     'duracion' => $request->duracion,
                     'asistio' => $request->asistio ?? false,
+                    'primeravez' => $request->primeravez ?? false,
+
                     'notas_seguimiento' => $request->notasSeguimiento,
                 ]
             );

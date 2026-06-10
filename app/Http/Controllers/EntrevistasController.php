@@ -53,7 +53,7 @@ class EntrevistasController extends Controller
     {
         try {
             DB::beginTransaction();
-
+            
             // Preparar los datos antes de insertar/actualizar
             $data = $request->except([
                 'id',
@@ -163,6 +163,8 @@ class EntrevistasController extends Controller
                         'nombre' => $dep['nombre'] ?? null,
                         'apellido_paterno' => $dep['apellido_paterno'] ?? null,
                         'apellido_materno' => $dep['apellido_materno'] ?? null,
+                        'edad' => $dep['edad'] ?? null,
+
                         'id_vinculo' => $dep['id_vinculo'] ?? null,
                         'esta_riesgo' => isset($dep['esta_riesgo']) ? filter_var($dep['esta_riesgo'], FILTER_VALIDATE_BOOLEAN) : false,
                         'created_at' => now(),
@@ -179,6 +181,8 @@ class EntrevistasController extends Controller
                         'nombre' => $red['nombre'] ?? null,
                         'apellido_paterno' => $red['apellido_paterno'] ?? null,
                         'apellido_materno' => $red['apellido_materno'] ?? null,
+                        'telefono' => $red['telefono'] ?? null,
+
                         'id_vinculo' => $red['id_vinculo'] ?? null,
                         'cuenta_apoyo' => isset($red['cuenta_apoyo']) ? filter_var($red['cuenta_apoyo'], FILTER_VALIDATE_BOOLEAN) : false,
                         'created_at' => now(),
@@ -855,13 +859,18 @@ class EntrevistasController extends Controller
                 'entrevistas.calle',
                 'entrevistas.num_ext',
                 'entrevistas.num_int',
+                'entrevistas.created_at',
+
                 'entrevistas.entre_calles',
                 'entrevistas.referencias',
                 'entrevistas.zona',
+                'u.nombre_completo',
                 DB::raw("GROUP_CONCAT(sp.nombre SEPARATOR ', ') as servicios_psicologicos")
             )
                 ->join('entrevista_servicios_psicologicos as esp', 'esp.entrevista_id', '=', 'entrevistas.id')
                 ->join('servicios_psicologicos as sp', 'sp.id', '=', 'esp.id_servicio')
+                ->join('usuarios as u', 'u.id', '=', 'entrevistas.id_user_created')
+
                 ->leftJoin('evaluaciones_psicologicas as ep', 'ep.id_entrevista', '=', 'entrevistas.id')
                 ->whereNull('ep.id_entrevista')  // Solo entrevistas que NO tienen evaluación
                 ->groupBy(
@@ -891,6 +900,63 @@ class EntrevistasController extends Controller
         } catch (\Exception $e) {
             Log::error($e->getMessage());
             return ApiResponse::error('Ocurrió un error', 500);
+        }
+    }
+    public function lobyJuridico()
+    {
+        try {
+            $query = Entrevista::select(
+                'entrevistas.id',
+                'entrevistas.curp',
+                'entrevistas.nombre',
+                'entrevistas.edad',
+                'entrevistas.telefono',
+                'entrevistas.codigo_postal',
+                'entrevistas.colonia',
+                'entrevistas.estado',
+                'entrevistas.municipio',
+                'entrevistas.localidad',
+                'entrevistas.calle',
+                'entrevistas.num_ext',
+                'entrevistas.num_int',
+                'entrevistas.entre_calles',
+                'entrevistas.referencias',
+                'entrevistas.zona',
+                'entrevistas.created_at',
+                'u.nombre_completo',
+
+                DB::raw("GROUP_CONCAT(DISTINCT sj.nombre SEPARATOR ', ') as servicios_juridicos") // ✅ Corregido: sj.nombre
+            )
+                ->join('entrevista_servicios_juridicos as esj', 'esj.entrevista_id', '=', 'entrevistas.id')
+                ->join('servicios_juridicos as sj', 'sj.id', '=', 'esj.id_servicio')
+                ->leftJoin('evaluaciones_juridicas as ej', 'ej.id_entrevista', '=', 'entrevistas.id')
+                ->join('usuarios as u', 'u.id', '=', 'entrevistas.id_user_created')
+
+                ->whereNull('ej.id_entrevista')  // Solo entrevistas que NO tienen evaluación jurídica
+                ->groupBy(
+                    'entrevistas.id',
+                    'entrevistas.curp',
+                    'entrevistas.nombre',
+                    'entrevistas.edad',
+                    'entrevistas.telefono',
+                    'entrevistas.codigo_postal',
+                    'entrevistas.colonia',
+                    'entrevistas.estado',
+                    'entrevistas.municipio',
+                    'entrevistas.localidad',
+                    'entrevistas.calle',
+                    'entrevistas.num_ext',
+                    'entrevistas.num_int',
+                    'entrevistas.entre_calles',
+                    'entrevistas.referencias',
+                    'entrevistas.zona'
+                );
+
+            $entrevistas = $query->get();
+
+            return ApiResponse::success($entrevistas, 'Lista de espera jurídica');
+        } catch (\Exception $e) {
+            return ApiResponse::error('Ocurrió un error: ' . $e->getMessage());
         }
     }
 }

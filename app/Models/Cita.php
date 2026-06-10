@@ -15,12 +15,15 @@ class Cita extends Model
         'duracion',
         'asistio',
         'notas_seguimiento',
+        'primeravez'
     ];
 
     protected $casts = [
         'fecha' => 'date',
         'hora' => 'string',
         'asistio' => 'boolean',
+        'primeravez' => 'boolean',
+
     ];
 
     public function evaluacionPsicologica()

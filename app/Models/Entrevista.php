@@ -97,9 +97,11 @@ class Entrevista extends Model
         'especifica_dependencia',
         'id_canalizacion',
         'fecha_canalizacion',
+        'semananas_embarazo',
         'responsable',
         'observaciones',
         'nombre',
+        'comentarios_ruta_antencion',
         'id_user_created',  // ← DEBE ESTAR AQUÍ
 
     ];

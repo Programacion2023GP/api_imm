@@ -63,10 +63,10 @@ class EvaluacionPsicologicaController extends Controller
             'fecha_alta' => 'required|date',
             'id_responsable' => 'required|integer',
             'id_entrevista' => 'required|integer|exists:entrevistas,id',
-            'id_problematica_abordada' => 'required|array|min:1',
-            'id_problematica_abordada.*' => 'integer|exists:problematicas_abordadas,id',
-            'id_violencia_asociada' => 'required|array|min:1',
-            'id_violencia_asociada.*' => 'integer|exists:violencias_asociadas,id',
+            // 'id_problematica_abordada' => 'required|array|min:1',
+            // 'id_problematica_abordada.*' => 'integer|exists:problematicas_abordadas,id',
+            // 'id_violencia_asociada' => 'required|array|min:1',
+            // 'id_violencia_asociada.*' => 'integer|exists:violencias_asociadas,id',
             'especifique_problematica_abordada' => 'nullable|string|max:255'
         ]);
 
@@ -76,7 +76,19 @@ class EvaluacionPsicologicaController extends Controller
 
         try {
             DB::beginTransaction();
+            if ($request->id>0) {
+                $existeEvaluacion = DB::table('evaluaciones_psicologicas')
+                    ->where('id_entrevista', $request->id_entrevista)
+                    ->exists();
 
+                if ($existeEvaluacion) {
+                    DB::rollBack();
+                    return ApiResponse::error(
+                        'Esta usuaria ya tiene una evaluación psicológica activa. No se puede crear otra.',
+                        500 // Conflict
+                    );
+                }
+            }
             $evaluationId = $request->id;
 
             if ($request->id) {
@@ -127,7 +139,7 @@ class EvaluacionPsicologicaController extends Controller
             return ApiResponse::success(['id' => $evaluationId], $message);
         } catch (\Exception $e) {
             DB::rollBack();
-            return ApiResponse::error('Ocurrió un error: ' . $e->getMessage(), 500);
+            return ApiResponse::error('Ocurrió un error', 500);
         }
     }
 
@@ -269,6 +281,8 @@ class EvaluacionPsicologicaController extends Controller
             // 1. Obtener las evaluaciones principales
             $evaluaciones = DB::table('evaluaciones_psicologicas as ep')
                 ->leftJoin('entrevistas as e', 'e.id', '=', 'ep.id_entrevista')
+                ->leftJoin('usuarios as u', 'u.id', '=', 'ep.id_responsable') // ✅ JOIN con usuarios
+
                 ->select(
                     'ep.*',
                     'e.id as folio',
@@ -286,6 +300,7 @@ class EvaluacionPsicologicaController extends Controller
                     'e.entre_calles',
                     'e.referencias',
                     'e.zona',
+                    'u.nombre_completo'
                 );
 
             // Filtrar por rol de psicólogo
@@ -335,7 +350,7 @@ class EvaluacionPsicologicaController extends Controller
 
             return ApiResponse::success($evaluaciones, 'Lista de espera');
         } catch (\Exception $e) {
-            return ApiResponse::error('Ocurrió un error: ' . $e->getMessage());
+            return ApiResponse::error('Ocurrió un error');
         }
     }
 }
