@@ -76,7 +76,7 @@ class EvaluacionPsicologicaController extends Controller
 
         try {
             DB::beginTransaction();
-            if ($request->id>0) {
+            if ($request->id==0) {
                 $existeEvaluacion = DB::table('evaluaciones_psicologicas')
                     ->where('id_entrevista', $request->id_entrevista)
                     ->exists();

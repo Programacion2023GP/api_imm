@@ -425,6 +425,9 @@ class AgendaController extends Controller
                     'e.activo',
                     'ent.colonia',
                     'ent.calle',
+                    'ent.num_ext',
+                    'ent.num_int',
+                    'ent.codigo_postal',
                     'ent.zona',
                     'ent.municipio',
                     'ent.estado',
@@ -442,53 +445,43 @@ class AgendaController extends Controller
                 return ApiResponse::error('Evaluación no encontrada', 404);
             }
 
-            // Obtener problemáticas abordadas desde entrevistas (si hay un campo específico)
-            // O desde otra tabla si existe
-            $problematicas = [];
+            // 🔹 OBTENER PROBLEMÁTICAS desde la tabla correcta: evaluaciones_problematicas
+            $problematicas = DB::table('evaluaciones_problematicas')
+                ->where('id_evaluacion', $personaId)
+                ->pluck('id_problematica')
+                ->toArray();
 
-            // Si existe un campo en entrevistas que almacena las problemáticas
-            if (isset($evaluacion->problematicas_abordadas)) {
-                // Si es JSON
-                $problematicas = json_decode($evaluacion->problematicas_abordadas, true) ?? [];
-                // O si es string separado por comas
-                // $problematicas = explode(',', $evaluacion->problematicas_abordadas);
-            }
-
-            // Obtener violencias asociadas desde entrevistas
-            $violencias = [];
-
-            // Si existe un campo en entrevistas que almacena las violencias
-            if (isset($evaluacion->violencias_asociadas)) {
-                // Si es JSON
-                $violencias = json_decode($evaluacion->violencias_asociadas, true) ?? [];
-                // O si es string separado por comas
-                // $violencias = explode(',', $evaluacion->violencias_asociadas);
-            }
+            // 🔹 OBTENER VIOLENCIAS desde la tabla correcta: evaluaciones_violencias
+            $violencias = DB::table('evaluaciones_violencias')
+                ->where('id_evaluacion', $personaId)
+                ->pluck('id_violencia')
+                ->toArray();
 
             return ApiResponse::success([
                 'id' => $evaluacion->id,
                 'folio' => $evaluacion->folio,
-
                 'fecha_alta' => $evaluacion->fecha_alta,
                 'id_responsable' => $evaluacion->id_responsable,
                 'id_entrevista' => $evaluacion->id_entrevista,
                 'activo' => (bool) $evaluacion->activo,
-                'especifique_problematica_abordada' => $evaluacion->especifique_problematica_abordada,
+                'especifique_problematica_abordada' => $evaluacion->especifique_problematica_abordada ?? '',
                 'id_problematica_abordada' => $problematicas,
                 'id_violencia_asociada' => $violencias,
                 // Datos de persona
-                'nombre' => $evaluacion->nombre,
-                'edad' => $evaluacion->edad,
-                'colonia'=> $evaluacion->colonia,
-                'calle'=> $evaluacion->calle,
-                'zona'=> $evaluacion->zona,
-                'municipio'=> $evaluacion->municipio,
-                'estado'=> $evaluacion->estado,
-                'curp' => $evaluacion->curp,
-                'telefono' => $evaluacion->telefono,
-                'email' => $evaluacion->email,
-                'fecha_nacimiento' => $evaluacion->fecha_nacimiento,
-               
+                'nombre' => $evaluacion->nombre ?? '',
+                'edad' => $evaluacion->edad ?? null,
+                'colonia' => $evaluacion->colonia ?? '',
+                'calle' => $evaluacion->calle ?? '',
+                'num_ext' => $evaluacion->num_ext ?? '',
+                'num_int' => $evaluacion->num_int ?? '',
+                'codigo_postal' => $evaluacion->codigo_postal ?? '',
+                'zona' => $evaluacion->zona ?? '',
+                'municipio' => $evaluacion->municipio ?? '',
+                'estado' => $evaluacion->estado ?? '',
+                'curp' => $evaluacion->curp ?? '',
+                'telefono' => $evaluacion->telefono ?? '',
+                'email' => $evaluacion->email ?? '',
+                'fecha_nacimiento' => $evaluacion->fecha_nacimiento ?? null,
             ], 'Evaluación obtenida correctamente');
         } catch (\Exception $e) {
             return ApiResponse::error('Error al obtener evaluación: ' . $e->getMessage(), 500);
