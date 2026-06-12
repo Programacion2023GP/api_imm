@@ -206,6 +206,8 @@ Route::middleware('auth:sanctum')->group(function () {
         // GET
         Route::get('datosiniciales', [AgendaController::class, 'obtenerDatosIniciales']);
         Route::get('estadisticas', [AgendaController::class, 'obtenerEstadisticas']);
+        Route::get('evaluacionpersona/{personaId}', [AgendaController::class, 'obtenerEvaluacionPorPersona']);
+
 
         // POST / PUT
         Route::post('citas', [AgendaController::class, 'guardarCita']);

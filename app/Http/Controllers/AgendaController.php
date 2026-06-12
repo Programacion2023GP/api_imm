@@ -400,4 +400,98 @@ class AgendaController extends Controller
             return ApiResponse::error('Error al reabrir el caso: ' . $e->getMessage(), 500);
         }
     }
+    // En AgendaController.php, agrega este método:
+
+    /**
+     * Obtener evaluación psicológica por ID de persona
+     * GET /api/evaluacionpsicologica/agenda/evaluacion/{personaId}
+     */
+    /**
+     * Obtener evaluación psicológica por ID de persona
+     * GET /api/evaluacionpsicologica/agenda/evaluacion/{personaId}
+     */
+    public function obtenerEvaluacionPorPersona($personaId)
+    {
+        try {
+            $evaluacion = DB::table('evaluaciones_psicologicas as e')
+                ->join('entrevistas as ent', 'e.id_entrevista', '=', 'ent.id')
+                ->where('e.id', $personaId)
+                ->select(
+                    'e.id',
+                    'ent.id as folio',
+                    'e.fecha_alta',
+                    'e.id_responsable',
+                    'e.id_entrevista',
+                    'e.activo',
+                    'ent.colonia',
+                    'ent.calle',
+                    'ent.zona',
+                    'ent.municipio',
+                    'ent.estado',
+                    'e.especifique_problematica_abordada',
+                    'ent.nombre',
+                    'ent.edad',
+                    'ent.curp',
+                    'ent.telefono',
+                    'ent.correo as email',
+                    'ent.fecha_nacimiento',
+                )
+                ->first();
+
+            if (!$evaluacion) {
+                return ApiResponse::error('Evaluación no encontrada', 404);
+            }
+
+            // Obtener problemáticas abordadas desde entrevistas (si hay un campo específico)
+            // O desde otra tabla si existe
+            $problematicas = [];
+
+            // Si existe un campo en entrevistas que almacena las problemáticas
+            if (isset($evaluacion->problematicas_abordadas)) {
+                // Si es JSON
+                $problematicas = json_decode($evaluacion->problematicas_abordadas, true) ?? [];
+                // O si es string separado por comas
+                // $problematicas = explode(',', $evaluacion->problematicas_abordadas);
+            }
+
+            // Obtener violencias asociadas desde entrevistas
+            $violencias = [];
+
+            // Si existe un campo en entrevistas que almacena las violencias
+            if (isset($evaluacion->violencias_asociadas)) {
+                // Si es JSON
+                $violencias = json_decode($evaluacion->violencias_asociadas, true) ?? [];
+                // O si es string separado por comas
+                // $violencias = explode(',', $evaluacion->violencias_asociadas);
+            }
+
+            return ApiResponse::success([
+                'id' => $evaluacion->id,
+                'folio' => $evaluacion->folio,
+
+                'fecha_alta' => $evaluacion->fecha_alta,
+                'id_responsable' => $evaluacion->id_responsable,
+                'id_entrevista' => $evaluacion->id_entrevista,
+                'activo' => (bool) $evaluacion->activo,
+                'especifique_problematica_abordada' => $evaluacion->especifique_problematica_abordada,
+                'id_problematica_abordada' => $problematicas,
+                'id_violencia_asociada' => $violencias,
+                // Datos de persona
+                'nombre' => $evaluacion->nombre,
+                'edad' => $evaluacion->edad,
+                'colonia'=> $evaluacion->colonia,
+                'calle'=> $evaluacion->calle,
+                'zona'=> $evaluacion->zona,
+                'municipio'=> $evaluacion->municipio,
+                'estado'=> $evaluacion->estado,
+                'curp' => $evaluacion->curp,
+                'telefono' => $evaluacion->telefono,
+                'email' => $evaluacion->email,
+                'fecha_nacimiento' => $evaluacion->fecha_nacimiento,
+               
+            ], 'Evaluación obtenida correctamente');
+        } catch (\Exception $e) {
+            return ApiResponse::error('Error al obtener evaluación: ' . $e->getMessage(), 500);
+        }
+    }
 }
