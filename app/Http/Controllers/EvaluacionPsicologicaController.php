@@ -100,7 +100,9 @@ class EvaluacionPsicologicaController extends Controller
                         'id_responsable' => $request->id_responsable,
                         'id_entrevista' => $request->id_entrevista,
                         'especifique_problematica_abordada' => $request->especifique_problematica_abordada,
-                        'activo' => 1
+                    'observaciones' => $request->observaciones,
+
+                    'activo' => $request->activo
                     ]);
 
                 // Eliminar relaciones existentes
@@ -113,7 +115,9 @@ class EvaluacionPsicologicaController extends Controller
                     'id_responsable' => $request->id_responsable,
                     'id_entrevista' => $request->id_entrevista,
                     'especifique_problematica_abordada' => $request->especifique_problematica_abordada,
-                    'activo' => 1
+                    'observaciones' => $request->observaciones,
+
+                    'activo' => $request->activo
                 ]);
             }
 

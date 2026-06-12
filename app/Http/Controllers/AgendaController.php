@@ -39,6 +39,7 @@ class AgendaController extends Controller
                     'ent.nombre',
                     'ent.id as folio',
                 'ent.telefono',
+                'e.observaciones', // 👈 AGREGAR ESTA LÍNEA
 
                 'u.nombre_completo'      // ✅ Nombre del psicólogo
             );
@@ -421,6 +422,7 @@ class AgendaController extends Controller
                     'ent.id as folio',
                     'e.fecha_alta',
                     'e.id_responsable',
+                    'e.observaciones',
                     'e.id_entrevista',
                     'e.activo',
                     'ent.colonia',
@@ -463,7 +465,10 @@ class AgendaController extends Controller
                 'fecha_alta' => $evaluacion->fecha_alta,
                 'id_responsable' => $evaluacion->id_responsable,
                 'id_entrevista' => $evaluacion->id_entrevista,
+                'observaciones' => $evaluacion->observaciones,
+
                 'activo' => (bool) $evaluacion->activo,
+
                 'especifique_problematica_abordada' => $evaluacion->especifique_problematica_abordada ?? '',
                 'id_problematica_abordada' => $problematicas,
                 'id_violencia_asociada' => $violencias,
