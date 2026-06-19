@@ -7,6 +7,7 @@ use App\Http\Controllers\AgendaController;
 use App\Http\Controllers\AreaAnatomicaLesionadaController;
 use App\Http\Controllers\ArmasController;
 use App\Http\Controllers\CanalizacionController;
+use App\Http\Controllers\CatalogosController;
 use App\Http\Controllers\ConsecuenciasSexualesController;
 use App\Http\Controllers\DependenciasController;
 use App\Http\Controllers\DiscapacidadesController;
@@ -18,19 +19,25 @@ use App\Http\Controllers\EspacioDigitalController;
 use App\Http\Controllers\EspacioParticularController;
 use App\Http\Controllers\EspacioPublicoController;
 use App\Http\Controllers\EstadoCivilController;
+use App\Http\Controllers\EstatusCasoController;
 use App\Http\Controllers\EvaluacionPsicologicaController;
 use App\Http\Controllers\IdentidadGeneroController;
 use App\Http\Controllers\IngresosPromediosController;
+use App\Http\Controllers\LegalController;
+use App\Http\Controllers\MotivoCierreController;
 use App\Http\Controllers\OcupacionesController;
 use App\Http\Controllers\OrientacionSexualController;
 use App\Http\Controllers\PermisosController;
 use App\Http\Controllers\ProblematicaAbordadaController;
+use App\Http\Controllers\ProcessJuridicController;
 use App\Http\Controllers\RelacionController;
 use App\Http\Controllers\RolesController;
 use App\Http\Controllers\ServicioMedicoController;
 use App\Http\Controllers\ServiciosJuridicosController;
 use App\Http\Controllers\ServiciosPsicologicosController;
 use App\Http\Controllers\SustanciasController;
+use App\Http\Controllers\TipoAsesoriaController;
+use App\Http\Controllers\TipoIncidenteController;
 use App\Http\Controllers\TipoViolenciaController;
 use App\Http\Controllers\TrabajoSocialController;
 use App\Http\Controllers\TransporteForaneoController;
@@ -166,6 +173,19 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('/violenciaasociada')->group(function () {
         Route::get('/', [ViolenciaAsociadaController::class, 'index']);
     });
+    Route::prefix('/tipoasesoria')->group(function () {
+        Route::get('/', [TipoAsesoriaController::class, 'index']);
+    });
+    Route::prefix('/estatuscaso')->group(function () {
+        Route::get('/', [EstatusCasoController::class, 'index']);
+    });
+    Route::prefix('/tipocasoincidente')->group(function () {
+        Route::get('/', [TipoIncidenteController::class, 'index']);
+        Route::post('/createorUpdate', [TipoIncidenteController::class, 'createorUpdate']);
+    });
+    Route::prefix('/motivocierre')->group(function () {
+        Route::get('/', [MotivoCierreController::class, 'index']);
+    });
     Route::prefix('/usuarios')->group(function () {
         Route::get('/', [UsersController::class, 'index']);
 
@@ -192,8 +212,14 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('delete', [EvaluacionPsicologicaController::class, 'destroy']);
         Route::get('/agenda', [EvaluacionPsicologicaController::class, 'agenda']);
     });
-    
 
+    Route::prefix('/legal')->group(function () {
+        Route::get('/', [LegalController::class, 'index']);
+        Route::get('/catalogos', [LegalController::class, 'catalogos']);
+        Route::post('/createorUpdate', [LegalController::class, 'store']);
+        Route::delete('/delete', [LegalController::class, 'destroy']);
+        Route::get('/agenda', [LegalController::class, 'agenda']);
+    });
     Route::prefix('/roles')->group(function () {
         Route::get('/', [RolesController::class, 'index']);
         Route::post('/unchangepermissions', [RolesController::class, 'unChangePermissions']);
@@ -220,4 +246,14 @@ Route::middleware('auth:sanctum')->group(function () {
         // DELETE
         Route::delete('/citas/{id}', [AgendaController::class, 'eliminarCita']);
     });
+    Route::prefix('processjuridic')->group(function () {
+        Route::get('/', [ProcessJuridicController::class, 'index']);
+        Route::get('/catalogos', [ProcessJuridicController::class, 'catalogos']);
+        Route::get('/agenda', [ProcessJuridicController::class, 'agenda']);
+        Route::get('/by-evaluacion', [ProcessJuridicController::class, 'getByEvaluacion']);
+        Route::get('/resumen', [ProcessJuridicController::class, 'resumenPorEvaluacion']);
+        Route::post('/createorUpdate', [ProcessJuridicController::class, 'store']);
+        Route::delete('/{id}', [ProcessJuridicController::class, 'destroy']);
+    });
+    Route::get('catalogo/{tabla}', [CatalogosController::class, 'index']);
 });

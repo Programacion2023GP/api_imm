@@ -53,7 +53,7 @@ class EntrevistasController extends Controller
     {
         try {
             DB::beginTransaction();
-            
+
             // Preparar los datos antes de insertar/actualizar
             $data = $request->except([
                 'id',
@@ -930,7 +930,7 @@ class EntrevistasController extends Controller
                 ->join('entrevista_servicios_juridicos as esj', 'esj.entrevista_id', '=', 'entrevistas.id')
                 ->join('servicios_juridicos as sj', 'sj.id', '=', 'esj.id_servicio')
                 ->leftJoin('evaluaciones_juridicas as ej', 'ej.id_entrevista', '=', 'entrevistas.id')
-                ->join('usuarios as u', 'u.id', '=', 'entrevistas.id_user_created')
+                ->leftJoin('usuarios as u', 'u.id', '=', 'entrevistas.id_user_created')
 
                 ->whereNull('ej.id_entrevista')  // Solo entrevistas que NO tienen evaluación jurídica
                 ->groupBy(
