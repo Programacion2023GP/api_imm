@@ -35,8 +35,23 @@ class Legal extends Model
         'id_tipo_asesoria',
         'id_estatus_caso',
         'activo',
+        'fecha_acompanamiento',
+        'fecha_denuncia',
+        'nombre_imputado',
+        'carpeta_investigacion',
+        'causa_penal',
+        'comentarios_procesales',
+        'id_autoridad_emisora',
+        'fecha_solicitud',
+        'fecha_audiencia',
+        'fecha_medida',
+        'fecha_termino_medida',
+        'id_tipo_medida',
+        'descripcion_medida',
+        'fecha_cierre',
+        'id_motivo_cierre',
+        'observaciones',
     ];
-
     /**
      * Los atributos que deben ser casteados a tipos nativos.
      *
@@ -46,8 +61,16 @@ class Legal extends Model
         'fecha_apertura' => 'date',
         'fecha_asesoria' => 'date',
         'activo' => 'boolean',
+        'fecha_acompanamiento' => 'date',
+        'fecha_denuncia' => 'date',
+        'fecha_solicitud' => 'date',
+        'fecha_audiencia' => 'date',
+        'fecha_medida' => 'date',
+        'fecha_termino_medida' => 'date',
+        'fecha_cierre' => 'date',
+        'carpeta_investigacion' => 'int',
+        'causa_penal' => 'int',
     ];
-
     /**
      * Relación con la entrevista (Módulo I).
      */

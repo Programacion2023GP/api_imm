@@ -105,7 +105,23 @@ class LegalController extends Controller
                     'hechos' => $request->hechos,
                     'id_tipo_asesoria' => $request->id_tipo_asesoria,
                     'id_estatus_caso' => $request->id_estatus_caso,
-                    'activo' => $request->activo ?? true
+                    'activo' => $request->activo ?? true,
+                    'fecha_acompanamiento' => $request->fecha_acompanamiento,
+                    'fecha_denuncia' => $request->fecha_denuncia,
+                    'nombre_imputado' => $request->nombre_imputado,
+                    'carpeta_investigacion' => $request->carpeta_investigacion,
+                    'causa_penal' => $request->causa_penal,
+                    'comentarios_procesales' => $request->comentarios_procesales,
+                    'id_autoridad_emisora' => $request->id_autoridad_emisora,
+                    'fecha_solicitud' => $request->fecha_solicitud,
+                    'fecha_audiencia' => $request->fecha_audiencia,
+                    'fecha_medida' => $request->fecha_medida,
+                    'fecha_termino_medida' => $request->fecha_termino_medida,
+                    'id_tipo_medida' => $request->id_tipo_medida,
+                    'descripcion_medida' => $request->descripcion_medida,
+                    'fecha_cierre' => $request->fecha_cierre,
+                    'id_motivo_cierre' => $request->id_motivo_cierre,
+                    'observaciones' => $request->observaciones,
                 ]);
 
                 $evaluationId = $legal->id;
@@ -132,7 +148,23 @@ class LegalController extends Controller
                     'hechos' => $request->hechos,
                     'id_tipo_asesoria' => $request->id_tipo_asesoria,
                     'id_estatus_caso' => $request->id_estatus_caso,
-                    'activo' => $request->activo ?? true
+                    'activo' => $request->activo ?? true,
+                    'fecha_acompanamiento' => $request->fecha_acompanamiento,
+                    'fecha_denuncia' => $request->fecha_denuncia,
+                    'nombre_imputado' => $request->nombre_imputado,
+                    'carpeta_investigacion' => $request->carpeta_investigacion,
+                    'causa_penal' => $request->causa_penal,
+                    'comentarios_procesales' => $request->comentarios_procesales,
+                    'id_autoridad_emisora' => $request->id_autoridad_emisora,
+                    'fecha_solicitud' => $request->fecha_solicitud,
+                    'fecha_audiencia' => $request->fecha_audiencia,
+                    'fecha_medida' => $request->fecha_medida,
+                    'fecha_termino_medida' => $request->fecha_termino_medida,
+                    'id_tipo_medida' => $request->id_tipo_medida,
+                    'descripcion_medida' => $request->descripcion_medida,
+                    'fecha_cierre' => $request->fecha_cierre,
+                    'id_motivo_cierre' => $request->id_motivo_cierre,
+                    'observaciones' => $request->observaciones,
                 ]);
 
                 $evaluationId = $legal->id;
@@ -194,6 +226,7 @@ class LegalController extends Controller
 
     private function getEvaluacionById($id)
     {
+        // Obtener la evaluación principal con todos los campos
         $evaluacion = DB::table('evaluaciones_juridicas as ej')
             ->select(
                 'ej.id',
@@ -204,7 +237,23 @@ class LegalController extends Controller
                 'ej.hechos',
                 'ej.id_tipo_asesoria',
                 'ej.id_estatus_caso',
-                'ej.activo'
+                'ej.activo',
+                'ej.fecha_acompanamiento',
+                'ej.fecha_denuncia',
+                'ej.nombre_imputado',
+                'ej.carpeta_investigacion',
+                'ej.causa_penal',
+                'ej.comentarios_procesales',
+                'ej.id_autoridad_emisora',
+                'ej.fecha_solicitud',
+                'ej.fecha_audiencia',
+                'ej.fecha_medida',
+                'ej.fecha_termino_medida',
+                'ej.id_tipo_medida',
+                'ej.descripcion_medida',
+                'ej.fecha_cierre',
+                'ej.id_motivo_cierre',
+                'ej.observaciones'
             )
             ->where('ej.id', $id)
             ->first();
@@ -213,48 +262,91 @@ class LegalController extends Controller
             return null;
         }
 
+        // Obtener incidentes
         $incidentes = DB::table('evaluaciones_juridicas_incidentes as eji')
             ->join('tipo_caso_incidente as ctci', 'eji.id_tipo_incidente', '=', 'ctci.id')
             ->select('ctci.id', 'ctci.nombre')
             ->where('eji.id_evaluacion_juridica', $id)
             ->get();
 
-        $responsable = DB::table('users')
-            ->select('id', 'name')
+        // Obtener nombres relacionados
+        $responsable = DB::table('usuarios')
+            ->select('nombre_completo')
             ->where('id', $evaluacion->id_responsable)
             ->first();
 
         $entrevista = DB::table('entrevistas')
-            ->select('id', 'fecha', 'nombre', 'id_usuario')
+            ->select('nombre', 'telefono', 'colonia', 'estado', 'municipio', 'calle', 'curp', 'zona', 'edad')
             ->where('id', $evaluacion->id_entrevista)
             ->first();
 
-        $tipoAsesoria = DB::table('tipo_asesoria') // corregir nombre de tabla
-            ->select('id', 'nombre')
+        $tipoAsesoria = DB::table('tipo_asesoria')
+            ->select('nombre')
             ->where('id', $evaluacion->id_tipo_asesoria)
             ->first();
 
         $estatusCaso = DB::table('estatus_caso')
-            ->select('id', 'nombre')
+            ->select('nombre')
             ->where('id', $evaluacion->id_estatus_caso)
             ->first();
 
+        $autoridadEmisora = DB::table('autoridad_emisora')
+            ->select('nombre')
+            ->where('id', $evaluacion->id_autoridad_emisora)
+            ->first();
+
+        $tipoMedida = DB::table('tipo_medida')
+            ->select('nombre')
+            ->where('id', $evaluacion->id_tipo_medida)
+            ->first();
+
+        $motivoCierre = DB::table('motivo_cierre')
+            ->select('nombre')
+            ->where('id', $evaluacion->id_motivo_cierre)
+            ->first();
+
+        // Construir respuesta sin IDs innecesarios
         return [
-            'id' => $evaluacion->id,
-            'id_entrevista' => $evaluacion->id_entrevista,
-            'entrevista' => $entrevista,
+            // Datos de la evaluación (sin el id)
             'fecha_apertura' => $evaluacion->fecha_apertura,
-            'id_responsable' => $evaluacion->id_responsable,
-            'responsable_nombre' => $responsable ? $responsable->name : null,
             'fecha_asesoria' => $evaluacion->fecha_asesoria,
             'hechos' => $evaluacion->hechos,
-            'id_tipo_asesoria' => $evaluacion->id_tipo_asesoria,
-            'tipo_asesoria_nombre' => $tipoAsesoria ? $tipoAsesoria->nombre : null,
-            'id_estatus_caso' => $evaluacion->id_estatus_caso,
-            'estatus_caso_nombre' => $estatusCaso ? $estatusCaso->nombre : null,
             'activo' => $evaluacion->activo,
-            'id_casos_incidentes' => $incidentes->pluck('id')->toArray(),
-            'incidentes_nombres' => $incidentes->pluck('nombre')->toArray()
+            'fecha_acompanamiento' => $evaluacion->fecha_acompanamiento,
+            'fecha_denuncia' => $evaluacion->fecha_denuncia,
+            'nombre_imputado' => $evaluacion->nombre_imputado,
+            'carpeta_investigacion' => $evaluacion->carpeta_investigacion,
+            'causa_penal' => $evaluacion->causa_penal,
+            'comentarios_procesales' => $evaluacion->comentarios_procesales,
+            'fecha_solicitud' => $evaluacion->fecha_solicitud,
+            'fecha_audiencia' => $evaluacion->fecha_audiencia,
+            'fecha_medida' => $evaluacion->fecha_medida,
+            'fecha_termino_medida' => $evaluacion->fecha_termino_medida,
+            'descripcion_medida' => $evaluacion->descripcion_medida,
+            'fecha_cierre' => $evaluacion->fecha_cierre,
+            'observaciones' => $evaluacion->observaciones,
+
+            // Nombres relacionados
+            'responsable_nombre' => $responsable ? $responsable->name : null,
+            'tipo_asesoria_nombre' => $tipoAsesoria ? $tipoAsesoria->nombre : null,
+            'estatus_caso_nombre' => $estatusCaso ? $estatusCaso->nombre : null,
+            'autoridad_emisora_nombre' => $autoridadEmisora ? $autoridadEmisora->nombre : null,
+            'tipo_medida_nombre' => $tipoMedida ? $tipoMedida->nombre : null,
+            'motivo_cierre_nombre' => $motivoCierre ? $motivoCierre->nombre : null,
+
+            // Datos de la entrevista (sin id)
+            'entrevista_nombre' => $entrevista ? $entrevista->nombre : null,
+            'telefono' => $entrevista ? $entrevista->telefono : null,
+            'colonia' => $entrevista ? $entrevista->colonia : null,
+            'estado' => $entrevista ? $entrevista->estado : null,
+            'municipio' => $entrevista ? $entrevista->municipio : null,
+            'calle' => $entrevista ? $entrevista->calle : null,
+            'curp' => $entrevista ? $entrevista->curp : null,
+            'zona' => $entrevista ? $entrevista->zona : null,
+            'edad' => $entrevista ? $entrevista->edad : null,
+
+            // Incidentes (solo nombres, sin IDs)
+            'incidentes_nombres' => $incidentes->pluck('nombre')->toArray(),
         ];
     }
 
@@ -263,16 +355,19 @@ class LegalController extends Controller
     private function getAllEvaluaciones()
     {
         $evaluaciones = DB::table('evaluaciones_juridicas as ej')
+            ->leftJoin('entrevistas as e', 'e.id', '=', 'ej.id_entrevista')
+            ->leftJoin('relacion as r', 'r.id', '=', 'e.id_vinculo_agresor')
+
+            ->leftJoin('usuarios as u', 'u.id', '=', 'ej.id_responsable')
+            ->leftJoin('tipo_asesoria as ta', 'ta.id', '=', 'ej.id_tipo_asesoria')
+            ->leftJoin('estatus_caso as ec', 'ec.id', '=', 'ej.id_estatus_caso')
+            ->leftJoin('autoridad_emisora as ae', 'ae.id', '=', 'ej.id_autoridad_emisora')
+            ->leftJoin('tipo_medida as tm', 'tm.id', '=', 'ej.id_tipo_medida')
+            ->leftJoin('motivo_cierre as mc', 'mc.id', '=', 'ej.id_motivo_cierre')
             ->select(
-                'e.nombre',
-                'e.telefono',
-                'e.colonia',
-                'e.estado',
-                'e.municipio',
-                'e.calle',
-                'e.edad',
-                'e.id as folio',
+                'ej.id as folio',                    // folio = id de la evaluación
                 'ej.id',
+            'r.nombre as relacion_victima',
                 'ej.id_entrevista',
                 'ej.fecha_apertura',
                 'ej.id_responsable',
@@ -280,12 +375,48 @@ class LegalController extends Controller
                 'ej.hechos',
                 'ej.id_tipo_asesoria',
                 'ej.id_estatus_caso',
-                'ej.activo'
+                'ej.activo',
+                'ej.fecha_acompanamiento',
+                'ej.fecha_denuncia',
+                'ej.nombre_imputado',
+                'ej.carpeta_investigacion',
+                'ej.causa_penal',
+                'ej.comentarios_procesales',
+                'ej.id_autoridad_emisora',
+                'ej.fecha_solicitud',
+                'ej.fecha_audiencia',
+                'ej.fecha_medida',
+                'ej.fecha_termino_medida',
+                'ej.id_tipo_medida',
+                'ej.descripcion_medida',
+                'ej.fecha_cierre',
+                'ej.id_motivo_cierre',
+                'ej.observaciones',
+                'e.nombre_agresor',
+                // Datos de la entrevista
+                'e.nombre as entrevista_nombre',
+                'e.telefono',
+                'e.colonia',
+                'e.estado',
+                'e.municipio',
+                'e.calle',
+                'e.curp',
+                'e.zona',
+                'e.edad',
+                // Nombres relacionados
+                'u.nombre_completo as responsable_nombre',
+                'ta.nombre as tipo_asesoria_nombre',
+                'ec.nombre as estatus_caso_nombre',
+                'ae.nombre as autoridad_emisora_nombre',
+                'tm.nombre as tipo_medida_nombre',
+                'mc.nombre as motivo_cierre_nombre'
             )
-            ->join('entrevistas as e', 'e.id', 'ej.id_entrevista')
-            ->orderBy('ej.id', 'desc')
-            ->get();
-
+            ->orderBy('ej.id', 'desc');
+            if (Auth::user()->id_rol == 4) {
+                $evaluaciones = $evaluaciones->where('ej.id_responsable', Auth::id());
+                }
+        $evaluaciones = $evaluaciones->get();
+        // Cargar incidentes y procesos para cada evaluación
         foreach ($evaluaciones as $evaluacion) {
             $incidentes = DB::table('evaluaciones_juridicas_incidentes as eji')
                 ->join('tipo_caso_incidente as ctci', 'eji.id_tipo_incidente', '=', 'ctci.id')
@@ -300,7 +431,6 @@ class LegalController extends Controller
                     ->first();
 
                 if ($proceso) {
-                    // Cargar evidencias como array de strings (URLs)
                     $this->cargarEvidenciasProceso($proceso);
                 }
 
@@ -309,6 +439,7 @@ class LegalController extends Controller
 
             $evaluacion->incidentes = $incidentes->toArray();
             $evaluacion->id_casos_incidentes = $incidentes->pluck('id')->toArray();
+            $evaluacion->id_nombres_incidentes = $incidentes->pluck('nombre')->toArray();
         }
 
         return $evaluaciones;
