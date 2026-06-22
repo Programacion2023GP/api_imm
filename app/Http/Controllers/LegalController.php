@@ -356,6 +356,8 @@ class LegalController extends Controller
     {
         $evaluaciones = DB::table('evaluaciones_juridicas as ej')
             ->leftJoin('entrevistas as e', 'e.id', '=', 'ej.id_entrevista')
+            ->leftJoin('relacion as r', 'r.id', '=', 'e.id_vinculo_agresor')
+            ->leftJoin('usuarios as us', 'u.id', '=', 'e.id_user_created')
 
             ->leftJoin('usuarios as u', 'u.id', '=', 'ej.id_responsable')
             ->leftJoin('tipo_asesoria as ta', 'ta.id', '=', 'ej.id_tipo_asesoria')
@@ -403,7 +405,7 @@ class LegalController extends Controller
                 'e.zona',
                 'e.edad',
                 // Nombres relacionados
-                'u.nombre_completo as responsable_nombre',
+                'us.nombre_completo as responsable_nombre',
                 'ta.nombre as tipo_asesoria_nombre',
                 'ec.nombre as estatus_caso_nombre',
                 'ae.nombre as autoridad_emisora_nombre',
