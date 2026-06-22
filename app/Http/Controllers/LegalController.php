@@ -358,7 +358,7 @@ class LegalController extends Controller
             ->leftJoin('entrevistas as e', 'e.id', '=', 'ej.id_entrevista')
             ->leftJoin('relacion as r', 'r.id', '=', 'e.id_vinculo_agresor')
 
-            ->leftJoin('usuarios as u', 'u.id', '=', 'ej.id_responsable')
+            ->leftJoin('usuarios as u', 'u.id', '=', 'e.id_responsable')
             ->leftJoin('tipo_asesoria as ta', 'ta.id', '=', 'ej.id_tipo_asesoria')
             ->leftJoin('estatus_caso as ec', 'ec.id', '=', 'ej.id_estatus_caso')
             ->leftJoin('autoridad_emisora as ae', 'ae.id', '=', 'ej.id_autoridad_emisora')
