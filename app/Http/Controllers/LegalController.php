@@ -404,8 +404,10 @@ class LegalController extends Controller
                 'e.curp',
                 'e.zona',
                 'e.edad',
-                // Nombres relacionados
-                'us.nombre_completo as responsable_nombre',
+            // Nombres relacionados
+            'u.nombre_completo as abogado',
+
+            'us.nombre_completo as responsable_nombre',
                 'ta.nombre as tipo_asesoria_nombre',
                 'ec.nombre as estatus_caso_nombre',
                 'ae.nombre as autoridad_emisora_nombre',
