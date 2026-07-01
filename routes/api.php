@@ -21,6 +21,7 @@ use App\Http\Controllers\EspacioPublicoController;
 use App\Http\Controllers\EstadoCivilController;
 use App\Http\Controllers\EstatusCasoController;
 use App\Http\Controllers\EvaluacionPsicologicaController;
+use App\Http\Controllers\EventController;
 use App\Http\Controllers\IdentidadGeneroController;
 use App\Http\Controllers\IngresosPromediosController;
 use App\Http\Controllers\LegalController;
@@ -212,7 +213,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('delete', [EvaluacionPsicologicaController::class, 'destroy']);
         Route::get('/agenda', [EvaluacionPsicologicaController::class, 'agenda']);
     });
-
+    Route::prefix('/eventos')->group(function () {
+        Route::get('/', [EventController::class, 'index']);
+        Route::get('/catalogos', [EventController::class, 'catalogos']);
+        Route::post('/createorUpdate', [EventController::class, 'store']);
+        Route::delete('delete', [EventController::class, 'destroy']);
+        Route::get('/agenda', [EventController::class, 'agenda']);
+    });
     Route::prefix('/legal')->group(function () {
         Route::get('/', [LegalController::class, 'index']);
         Route::get('/catalogos', [LegalController::class, 'catalogos']);
@@ -255,5 +262,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/createorUpdate', [ProcessJuridicController::class, 'store']);
         Route::delete('/{id}', [ProcessJuridicController::class, 'destroy']);
     });
-    Route::get('catalogo/{tabla}', [CatalogosController::class, 'index']);
+    Route::prefix('catalogo')->group(function () {
+        Route::get('/{tabla}', [CatalogosController::class, 'index']);
+
+        Route::post('/{tabla}/createorUpdate', [CatalogosController::class, 'store']);
+    });
 });

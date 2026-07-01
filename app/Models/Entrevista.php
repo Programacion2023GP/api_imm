@@ -103,6 +103,8 @@ class Entrevista extends Model
         'nombre',
         'comentarios_ruta_antencion',
         'id_user_created',  // ← DEBE ESTAR AQUÍ
+        'longitud',
+        'latitud'
 
     ];
 }
